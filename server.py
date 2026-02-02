@@ -8,28 +8,61 @@ serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(('', serverPort))
 
 serverSocket.listen(1)
-print("The server is ready to receive.")
-while True:
+isOn = True
+while isOn:
+    print("The server is ready to receive.")
     connectionSocket, addr = serverSocket.accept()
     print("Connection established with client")
     
     #recieve client name and interger
-    clientName = connectionSocket.recv(1024).decode()
-    print("Raw client name received: '" + clientName + "'")
-    print("Client name length: " + str(len(clientName)))
+    clientName, interger = connectionSocket.recv(1024).decode().split(',')
+    print("Client name received: " + clientName)
+    print("Interger received: " + interger)
     
-    interger = connectionSocket.recv(1024).decode()
-    print("Raw interger received: '" + interger + "'")
-    print("Interger length: " + str(len(interger)))
+    try:
+        interger = int(interger.strip())
+        if interger >= 100 or interger <= 1:
+            print("Invalid integer received, closing connection.")
+            connectionSocket.close()
+            turnOff = input("Turn off server? (y/n): ")
+            if turnOff.lower() == 'y':
+                isOn = False
+                print("Shutting down server.")
+            continue
+    except ValueError:
+        print(interger)
+        print("Error: received data is not a valid integer")
+        connectionSocket.close()
+        continue
     
-    # sends server name
-    print("Sending server name...")
-    connectionSocket.send(serverName.encode())
-    print("Sent server name")
-    # sends server interger
-    print("Sending server integer...")
-    connectionSocket.send(serverInterger.encode())
-    print("Sent server integer")
+    print("Raw interger received: '" + str(interger) + "'")
+    
+    message = serverName + "," + serverInterger
+    connectionSocket.send(message.encode())
+    print("Sent server name and integer to client")
+    
+    
+    '''
+    This is deprecated code that ran into several issues such as 
+        value error, 
+        packets being lost completely,
+        bad formatting when sending multiple pieces of data separately.
+    It has been replaced with a single send and recv using a comma to separate values.
+    
+    Would be nice to have a protocol for sending multiple pieces of data in a specific format.
+    '''
+    # # sends server name
+    # print("Sending server name...")
+    # connectionSocket.send(serverName.encode())
+    # print("Sent server name")
+    # # sends server interger
+    # print("Sending server integer...")
+    # connectionSocket.send(serverInterger.encode())
+    # print("Sent server integer")
     
     #close connection
     connectionSocket.close()
+    turnOff = input("Turn off server? (y/n): ")
+    if turnOff.lower() == 'y':
+        isOn = False
+        print("Shutting down server.")
